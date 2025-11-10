@@ -1,0 +1,111 @@
+# setup for a linux system using Fedora 43 with iGPU support for
+# Intel Arc graphics on a meteor lake, lunar lake, or arrow lake systems
+# Tested on a Meteor Lake HP laptop (7 155H), and a Asus Arrow Lake (7 255H)
+# at the bottom of this document there is a few example shell scripts, which
+# need to be modified with your path information, for where you install the
+# intel-oneapi-base-toolkit... offline installer toolkit and environment.
+
+Install Fedora system packages from a terminal command prompt.
+- sudo dnf install git clinfo g++ gcc make cmake bison flex bc ncurses-devel libcurl-devel \
+    python3-virtualenv intel-compute-runtime intel-vpl-gpu-rt-devel intel-opencl intel-opencl-clang-devel \
+    intel-ocloc intel-ocloc-devel intel-level-zero intel-level-zero-devel oneapi-level-zero-devel
+- test to see if you can see your arc graphics gpu by typing the following in a terminal:
+    $ clinfo -l
+- you should see the arc graphics gpu.
+
+Using a browser, google "Intel oneAPI Base Toolkit download"
+- The link should be eiter the first, or second link to the intel oneAPI Base Toolkit website.
+- Next you should end up on the intel.com website under the section Intel oneAPI Base Toolkit
+- Next make sure you choose [Linux] for the Operation System
+- Also make sure to select under Installer Type [Offline Installer]
+- (at this current time, the latest version is 2025.3)
+- You should see a link with the label (Continue as Guest (download starts immediately))
+
+Now install the Intel oneAPI Base Toolkit on your system
+- if you are a regular user, then change the premissions on the Intel oneAPI Base Toolkit file
+  using the following command from a cli (command prompt).
+    $ chmod +x <full path to the oneAPI Base Toolkit file>/intel-oneapi-base-toolkit-2025.3.0.375_offline.sh
+
+- Next run the file from the command prompt:
+    $ intel-oneapi-base-toolkit-2025.3.0.375_offline.sh
+- if you want to install this on the system for multiple users to get access to this toolkit, then
+- put the sudo command in front.  Also you might want to install it in /opt instead
+    $ cd /opt
+    $ sudo <path where this toolkit is located at>/intel-oneapi-base-toolkit-2025.3.0.375_offline.sh
+
+- after it completes you should end up with a folder called 'intel'
+- Now type in the following command:
+    $ source < full path if not in same folder as the intel folder >/intel/oneapi/setvars.sh
+
+- Remember you have to do this command each, and every time you want to use oneAPI, or SYCL env.
+- Next type in the following command to see if SYCL can see a level_zero:gpu:
+    $ sycl-ls
+
+- If its all working then the Intel oneAPI Base Toolkit sycl-ls command should display a number of devices
+  and one of those devices needs to be [level_zero:gpu][level_zero:0] Intel(R) oneAPI Unified Runtime...
+
+Using the browser again, look for llama.cpp on github.com
+- there should be one called llama.cpp on github.com/ggml-org/llama.cpp
+- you can run either:
+   $ git clone https://github.com/ggml-org/llama.cpp.git
+-   or click on download from the the https://github.com/ggml-org/llama.cpp web page
+
+Prepare your terminal development environment
+- Type in the following if you didn't do it before (well you better do it NOW!):
+    $ source /< path where you installed the intel oneapi toolkit >/intel/oneapi/setvars.sh
+
+- Next go into the unzip, or git downloaded llama.cpp folder
+- Type in the following commands.  ONLY choose either Option 1, or Option 2. Only perform ONE
+  of these options
+
+    # Option 1: Use FP32 (recommended for better performance in most cases)
+    cmake -B build -DGGML_SYCL=ON -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx
+
+    # Option 2: Use FP16
+    cmake -B build -DGGML_SYCL=ON -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DGGML_SYCL_F16=ON
+
+    # MUST do this action after Option 1 or Option 2 is completed. Next create All of the binary files
+    cmake --build build --config Release -j -v
+
+- if the build completes and gets to 100%, you should now have a working llama.cpp inferencing engine
+  with SYCL support built for Intel Arc GPU's or iGPU's.  To make sure it all works, you will need
+  to download a model.  You can get models from a number of different web sites.  A site called
+  huggingface.com has at this date in time, over 2.2 million llms models to choose from.  Download a
+  smaller models just to test with, and then you can quickly move up to some larger models.  Make sure
+  to download models that are using the gguf, or ggml formats.
+
+Running a model for Inference
+- there are a number of ways you can do inferencing.  You could type everything out within a command
+  line.  The better way is to create a shell script file.  The following shell script is using the
+  server command version.  Therefore you need to open a browser and go to localhost:8080. Afterwards,
+  start asking questions.   Here is a few sample shell scripts
+
+     ---------- /usr/local/bin/gpt-120b-server -------------------------------------------------------
+	#!/bin/bash
+	source <path to where the oneAPI Base Toolkit was installed>/intel/oneapi/setvars.sh
+	cd <path where the llama.cpp directory is installed>/llama.cpp
+	./build/bin/llama-server -m <path where your models reside>/gpt-oss-120b_Q8_0.gguf -ngl 0 -t 14 -c 131072
+     -------------------------------------------------------------------------------------------------
+
+     Asus Nuc 15 Pro Ultra 7 255H running gpt-oss-120B gets around 17 tokens per second
+
+     ---------- /usr/local/bin/gemma-3-27b-server -----------------------------------------------------
+	#!/bin/bash
+	source <path to where the oneAPI Base Toolkit was installed>/intel/oneapi/setvars.sh
+	cd <path where the llama.cpp directory is installed>/llama.cpp
+	./build/bin/llama-server -m <model path>/gemma-3-27b-it-q4_0.gguf --mmproj <model path>/mmproj-model-f16-27B.gguf -ngl 999 -t 8 -c 28000
+     -------------------------------------------------------------------------------------------------
+
+     Asus Nuc 15 Pro Ultra 7 255H running gemma-3-27B gets close to 4 tokens per second
+
+ CLI or Terminal window llm version 
+
+     ---------- /usr/local/bin/gpt-120b-cli ----------------------------------------------------------
+	#!/bin/bash
+	source <path to where the oneAPI Base Toolkit was installed>/intel/oneapi/setvars.sh
+	cd <path where the llama.cpp directory is installed>/llama.cpp
+	./build/bin/llama-cli -m <path where your models reside>/gpt-oss-120b_Q8_0.gguf -st -ngl 0 -t 14 -c 131072 -p "$*"
+     -------------------------------------------------------------------------------------------------
+
+     Asus Nuc 15 Pro Ultra 7 255H running gpt-oss-120B gets around 17 tokens per second
+
