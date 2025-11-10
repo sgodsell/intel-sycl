@@ -26,8 +26,8 @@ Now install the Intel oneAPI Base Toolkit on your system
   using the following command from a cli (command prompt).
     $ chmod +x <full path to the oneAPI Base Toolkit file>/intel-oneapi-base-toolkit-2025.3.0.375_offline.sh
 
-- Next run the file from the command prompt:
-    $ intel-oneapi-base-toolkit-2025.3.0.375_offline.sh
+- Next run the file from the command prompt, if you want move this file to another folder, then do that first:
+    $ ./intel-oneapi-base-toolkit-2025.3.0.375_offline.sh
 - if you want to install this on the system for multiple users to get access to this toolkit, then
 - put the sudo command in front.  Also you might want to install it in /opt instead
     $ cd /opt
