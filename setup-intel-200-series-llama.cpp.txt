@@ -5,7 +5,7 @@
 Install Fedora system packages from a terminal command prompt.
 - sudo dnf install git clinfo g++ gcc make cmake bison flex bc ncurses-devel libcurl-devel \
     python3-virtualenv intel-compute-runtime intel-vpl-gpu-rt-devel intel-opencl intel-opencl-clang-devel \
-    intel-ocloc intel-ocloc-devel intel-level-zero intel-level-zero-devel
+    intel-ocloc intel-ocloc-devel intel-level-zero intel-level-zero-devel oneapi-level-zero-devel
 - test to see if you can see your arc graphics gpu by typing the following in a terminal:
     $ clinfo -l
 - you should see the arc graphics gpu.
